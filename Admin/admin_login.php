@@ -2,6 +2,13 @@
 session_start();
 require_once 'config.php';
 
+$mysqli = new mysqli($servername, $username, $password, $dbname);
+
+// Check connection
+if ($mysqli->connect_error) {
+    die("Connection failed: " . $mysqli->connect_error);
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = isset($_POST['email']) ? $_POST['email'] : '';
     $password = isset($_POST['password']) ? $_POST['password'] : '';
@@ -10,8 +17,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $sql = "SELECT name, email, password FROM admins WHERE email = ?";
     if ($stmt = $mysqli->prepare($sql)) {
         $stmt->bind_param("s", $email);
-        
-        if ($stmt->execute()) {
+        $stmt->execute();
             $stmt->store_result();
             
             // Check if email exists, if yes then verify password
@@ -20,9 +26,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 if ($stmt->fetch()) {
                     if (password_verify($password, $hashed_password)) {
                         // Password is correct, so start a new session
-                        session_start();
                         
                         header("location: admin_dashboard.php");
+                       
                         // Store data in session variables
                         $_SESSION["loggedin"] = true;
                         $_SESSION["name"] = $name;
@@ -45,7 +51,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         $stmt->close();
     }
-}
+
 
 $mysqli->close();
 ?>

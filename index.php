@@ -1,5 +1,20 @@
 <?php
 session_start();
+
+
+require_once 'routes.php';
+
+// Get the current path
+$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+// Check if the path exists in the routes array
+if (array_key_exists($path, $routes)) {
+    require $routes[$path];
+} else {
+    // Handle 404 Not Found
+    http_response_code(404);
+    echo "404 Not Found";
+}
 ?>
 
 <!DOCTYPE html>
@@ -16,7 +31,7 @@ session_start();
     <ul class="navul">
     <?php if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true): ?>
         <li class="navli">
-            <a href="profile.php"><?php echo htmlspecialchars($_SESSION['username']); ?></a>
+            <a href="profile.php"><?php echo htmlspecialchars($_SESSION['name']); ?></a>
             <ul class="dropdown">
                 <li><a href="logout.php">Logout</a></li>
             </ul>

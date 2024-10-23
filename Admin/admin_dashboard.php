@@ -8,15 +8,36 @@ if (!isset($_SESSION['email'])) {
     exit();
 }
 
-// Fetch all shop details
-$sql = "SELECT * FROM shops";
-$result = $mysqli->query($sql);
-if (!$result) {
-    die("Error fetching shop details: " . $mysqli->error);
+// Get the admin email from the session
+$adminEmail = $_SESSION['email'];
+
+// Create connection
+$mysqli = new mysqli($servername, $username, $password, $dbname);
+
+// Check connection
+if ($mysqli->connect_error) {
+    die("Connection failed: " . $mysqli->connect_error);
 }
 
+// Fetch shop details for the logged-in admin
+$sql = "
+    SELECT shops.*
+    FROM shops
+    JOIN admins ON shops.admin_email = admins.email
+    WHERE admins.email = ?
+";
+$stmt = $mysqli->prepare($sql);
+
+if ($stmt === false) {
+    die("Prepare failed: " . $mysqli->error);
+}
+
+$stmt->bind_param("s", $adminEmail);
+$stmt->execute();
+$result = $stmt->get_result();
 $shops = $result->fetch_all(MYSQLI_ASSOC);
 
+$stmt->close();
 $mysqli->close();
 ?>
 
@@ -33,7 +54,7 @@ $mysqli->close();
         <nav class="sidebar">
             <ul>
                 <li><a href="admin_dashboard.php">Dashboard</a></li>
-                <li><a href="profile.php">Profile</a></li>
+                <li><a href="admin_profile.php">Profile</a></li>
                 <li><a href="admin_logout.php">Logout</a></li>
             </ul>
         </nav>

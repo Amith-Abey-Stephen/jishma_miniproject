@@ -8,6 +8,7 @@ if (!isset($_SESSION['email'])) {
     exit();
 }
 
+$adminEmail = $_SESSION['email'];
 $shop_name = isset($_GET['shop_name']) ? $_GET['shop_name'] : null;
 $location = '';
 $description = '';
@@ -36,6 +37,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $shop_name = $_POST['shop_name'];
     $location = $_POST['location'];
     $description = $_POST['description'];
+    $adminEmail = $_SESSION['email'];
 
     if ($shop_name) {
         // Update existing shop
@@ -45,6 +47,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             if ($stmt->execute()) {
                 $success = "Shop details updated successfully.";
                 header("Location: admin_dashboard.php");
+                exit();
             } else {
                 $error = "Error updating shop details: " . $stmt->error;
             }
@@ -54,20 +57,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     } else {
         // Add new shop
-        $sql = "INSERT INTO shops (shop_name, location, description) VALUES (?, ?, ?)";
-        if ($stmt = $mysqli->prepare($sql)) {
-            $stmt->bind_param("sss", $shop_name, $location, $description);
-            if ($stmt->execute()) {
-                $success = "New shop added successfully.";
-                header("Location: admin_dashboard.php");
-                exit();
+        if (!empty($shop_name)) {
+            $sql = "INSERT INTO shops (shop_name, location, description, admin_email) VALUES (?, ?, ?, ?)";
+            if ($stmt = $mysqli->prepare($sql)) {
+                $stmt->bind_param("ssss", $shop_name, $location, $description, $adminEmail);
+                if ($stmt->execute()) {
+                    $success = "New shop added successfully.";
+                    header("Location: admin_dashboard.php");
+                    exit();
+                } else {
+                    echo "Error adding new shop: " . $stmt->error;
+                }
+                $stmt->close();
             } else {
-                $error = "Error adding new shop: " . $stmt->error;
+                echo "Error preparing statement: " . $mysqli->error;
             }
-            $stmt->close();
-        } else {
-            $error = "Error: " . $mysqli->error;
-        }
+            
     }
 }
 
@@ -92,10 +97,8 @@ $mysqli->close();
             </ul>
         </nav>
         <section class="dashboard">
-            
             <div class="page">
-            <h1><?php echo $shop_name ? 'Edit Shop' : 'Add New Shop'; ?></h1>
-            
+                <h1><?php echo $shop_name ? 'Edit Shop' : 'Add New Shop'; ?></h1>
                 <form action="manage_shop.php<?php echo $shop_name ? '?shop_name=' . urlencode($shop_name) : ''; ?>" method="post">
                     <label for="shop_name">Shop Name:</label>
                     <input type="text" id="shop_name" name="shop_name" value="<?php echo htmlspecialchars($shop_name); ?>" required><br><br>
@@ -106,6 +109,8 @@ $mysqli->close();
                     <label for="description">Description:</label>
                     <textarea id="description" name="description" required><?php echo htmlspecialchars($description); ?></textarea><br><br>
                     
+                    <input type="hidden" name="admin_email" value="<?php echo htmlspecialchars($adminEmail); ?>">
+    
                     <input type="submit" value="<?php echo $shop_name ? 'Update Shop' : 'Add Shop'; ?>">
                 </form>
                 <?php if (isset($success)): ?>
